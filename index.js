@@ -203,6 +203,85 @@ client.on(Events.InteractionCreate, async interaction => {
      ephemeral: true
    });
   }
+
+// /給予
+if (interaction.commandName === '給予') {
+
+  // 只有群組擁有者可用
+  if (
+    interaction.guild.ownerId !== interaction.user.id
+  ) {
+    return interaction.reply({
+      content: '❌ 只有群組擁有者可以使用',
+      ephemeral: true
+    });
+  }
+
+  const target =
+    interaction.options.getUser('玩家');
+
+  const amount =
+    interaction.options.getInteger('數量');
+
+  if (!data[target.id]) {
+    data[target.id] = {
+      coins: 0
+    };
+  }
+
+  data[target.id].coins += amount;
+
+  saveData(data);
+
+  await interaction.reply({
+    content:
+`✅ 已給予 ${target.username} ${amount} 星雨幣`,
+    ephemeral: true
+  });
+
+}
+
+// /扣除
+if (interaction.commandName === '扣除') {
+
+  // 只有群組擁有者可用
+  if (
+    interaction.guild.ownerId !== interaction.user.id
+  ) {
+    return interaction.reply({
+      content: '❌ 只有群組擁有者可以使用',
+      ephemeral: true
+    });
+  }
+
+  const target =
+    interaction.options.getUser('玩家');
+
+  const amount =
+    interaction.options.getInteger('數量');
+
+  if (!data[target.id]) {
+    data[target.id] = {
+      coins: 0
+    };
+  }
+
+  data[target.id].coins -= amount;
+
+  if (data[target.id].coins < 0) {
+    data[target.id].coins = 0;
+  }
+
+  saveData(data);
+
+  await interaction.reply({
+    content:
+`❌ 已扣除 ${target.username} ${amount} 星雨幣`,
+    ephemeral: true
+  });
+
+}
+
  // /排行榜
  if (interaction.commandName === '排行榜') {
 

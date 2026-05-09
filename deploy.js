@@ -24,6 +24,38 @@ new SlashCommandBuilder()
   .setName('排行榜')
   .setDescription('查看星雨幣排行榜'),
 
+new SlashCommandBuilder()
+  .setName('給予')
+  .setDescription('給予玩家星雨幣')
+  .addUserOption(option =>
+    option
+      .setName('玩家')
+      .setDescription('選擇玩家')
+      .setRequired(true)
+  )
+  .addIntegerOption(option =>
+    option
+      .setName('數量')
+      .setDescription('星雨幣數量')
+      .setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName('扣除')
+  .setDescription('扣除玩家星雨幣')
+  .addUserOption(option =>
+    option
+      .setName('玩家')
+      .setDescription('選擇玩家')
+      .setRequired(true)
+  )
+  .addIntegerOption(option =>
+    option
+      .setName('數量')
+      .setDescription('星雨幣數量')
+      .setRequired(true)
+  ),
+
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' })
