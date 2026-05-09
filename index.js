@@ -22,6 +22,12 @@ intents: [
 
 const DATA_FILE = './data.json';
 
+const shop = {
+  '95折券': 50,
+  '9折券: 100,
+  '85折券': 200
+};
+
 // 如果 data.json 不存在就建立
 if (!fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, '{}');
@@ -277,6 +283,58 @@ if (interaction.commandName === '扣除') {
   await interaction.reply({
     content:
 `❌ 已扣除 ${target.username} ${amount} 星雨幣`,
+    ephemeral: true
+  });
+
+}
+
+// /商店
+if (interaction.commandName === '商店') {
+
+  let text = '🛒 星雨商店\n\n';
+
+  for (const item in shop) {
+    text += `✨ ${item} - ${shop[item]} 星雨幣\n`;
+  }
+
+  await interaction.reply({
+    content: text,
+    ephemeral: true
+  });
+
+}
+
+// /購買
+if (interaction.commandName === '購買') {
+
+  const item =
+    interaction.options.getString('商品');
+
+  if (!shop[item]) {
+    return interaction.reply({
+      content: '❌ 找不到這個商品',
+      ephemeral: true
+    });
+  }
+
+  const price = shop[item];
+
+  if (data[userId].coins < price) {
+    return interaction.reply({
+      content: '❌ 星雨幣不足',
+      ephemeral: true
+    });
+  }
+
+  data[userId].coins -= price;
+
+  saveData(data);
+
+  await interaction.reply({
+    content:
+`🛒 你購買了 ${item}！
+
+花費 ${price} 星雨幣`,
     ephemeral: true
   });
 

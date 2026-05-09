@@ -56,6 +56,21 @@ new SlashCommandBuilder()
       .setRequired(true)
   ),
 
+
+new SlashCommandBuilder()
+  .setName('商店')
+  .setDescription('查看星雨商店'),
+
+new SlashCommandBuilder()
+  .setName('購買')
+  .setDescription('購買商品')
+  .addStringOption(option =>
+    option
+      .setName('商品')
+      .setDescription('輸入商品名稱')
+      .setRequired(true)
+  ),
+
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' })
