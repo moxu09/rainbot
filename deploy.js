@@ -97,6 +97,10 @@ new SlashCommandBuilder()
       .setRequired(true)
   ),
 
+new SlashCommandBuilder()
+  .setName('星雨面板')
+  .setDescription('發送星雨查詢面板'),
+
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' })

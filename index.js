@@ -7,6 +7,7 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle
+  EmbedBuilder
 } = require('discord.js');
 
 const fs = require('fs');
@@ -45,6 +46,35 @@ function saveData(data) {
 
 client.once(Events.ClientReady, () => {
   console.log('Bot 已上線');
+});
+
+client.on(Events.InteractionCreate, async interaction => {
+
+  // 按鈕互動
+  if (interaction.isButton()) {
+
+    // 查詢星雨幣
+    if (interaction.customId === 'check_coins') {
+
+      const data = loadData();
+      const userId = interaction.user.id;
+
+      if (!data[userId]) {
+        data[userId] = {
+          coins: 0
+        };
+      }
+
+      await interaction.reply({
+        content:
+`💰 你目前有 ${data[userId].coins} 星雨幣`,
+        ephemeral: true
+      });
+
+    }
+
+  }
+
 });
 
 client.on('messageCreate', async message => {
@@ -398,6 +428,33 @@ if (interaction.commandName === '刪除商品') {
     content:
 `🗑️ 已刪除商品：${item}`,
     ephemeral: true
+  });
+
+}
+
+// /星雨面板
+if (interaction.commandName === '星雨面板') {
+
+  const embed =
+    new EmbedBuilder()
+      .setTitle('☔ 星雨系統')
+      .setDescription(
+        '點擊下方按鈕查詢你的星雨幣'
+      );
+
+  const button =
+    new ButtonBuilder()
+      .setCustomId('check_coins')
+      .setLabel('查詢星雨幣')
+      .setStyle(ButtonStyle.Primary);
+
+  const row =
+    new ActionRowBuilder()
+      .addComponents(button);
+
+  await interaction.reply({
+    embeds: [embed],
+    components: [row]
   });
 
 }
