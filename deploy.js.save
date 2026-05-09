@@ -29,7 +29,6 @@ const rest = new REST({ version: '10' })
 
 try {
 
-
 console.log('開始部署指令');
 
 await rest.put(

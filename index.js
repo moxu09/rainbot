@@ -67,9 +67,10 @@ client.on(Events.InteractionCreate, async interaction => {
   // /錢包
   if (interaction.commandName === '錢包') {
 
-    await interaction.reply(
-      `💰 你目前有 ${data[userId].coins} 星雨幣`
-    );
+    await interaction.reply({
+     content: `💰 你目前有 ${data[userId].coins} 星雨幣`,
+     ephemeral: true
+   });
   }
 
 });
