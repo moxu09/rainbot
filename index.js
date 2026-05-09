@@ -49,8 +49,6 @@ client.on('messageCreate', async message => {
 
   if (random < 5) {
 
-    const reward = 50;
-
     const button =
       new ButtonBuilder()
         .setCustomId('claim_rain')
@@ -93,55 +91,50 @@ client.on('messageCreate', async message => {
 
       }
 
-      if (claimedUsers.length >= 10) {
+      if (!claimedUsers.includes(userId)) {
 
-        return interaction.reply({
-          content: '星雨幣已被領完！',
+        const data = loadData();
+
+        if (!data[userId]) {
+          data[userId] = {
+            coins: 0
+          };
+        }
+
+        let reward;
+
+        const leftPeople =
+          10 - claimedUsers.length;
+
+        if (leftPeople === 1) {
+
+          reward = remainingCoins;
+
+        } else {
+
+          reward =
+            Math.floor(
+              Math.random() *
+              (remainingCoins / 2)
+            ) + 1;
+
+        }
+
+        remainingCoins -= reward;
+
+        data[userId].coins += reward;
+
+        claimedUsers.push(userId);
+
+        saveData(data);
+
+        await interaction.reply({
+          content:
+`☔ 你搶到了 ${reward} 星雨幣！`,
           ephemeral: true
         });
 
       }
-
-      const data = loadData();
-
-      if (!data[userId]) {
-        data[userId] = {
-          coins: 0
-        };
-      }
-
-      let reward;
-
-      const leftPeople =
-        10 - claimedUsers.length;
-
-      if (leftPeople === 1) {
-
-        reward = remainingCoins;
-
-      } else {
-
-        reward =
-          Math.floor(
-            Math.random() *
-            (remainingCoins / 2)
-          ) + 1;
-
-      }
-
-      remainingCoins -= reward;
-
-      data[userId].coins += reward;
-
-      claimedUsers.push(userId);
-
-      saveData(data);
-
-      await interaction.reply({
-        content:
-`☔ 你搶到了 ${reward} 星雨幣！`,
-        ephemeral: true
-      });
 
       if (
         claimedUsers.length >= 10 ||
@@ -167,12 +160,20 @@ client.on('messageCreate', async message => {
 
     });
 
-  }
+ }
 
 });
 
-
 client.on(Events.InteractionCreate, async interaction => {
+
+  if (!interaction.isChatInputCommand()) return;
+
+  const data = loadData();
+  const userId = interaction.user.id;
+
+  }
+
+});
 
   if (!interaction.isChatInputCommand()) return;
 
