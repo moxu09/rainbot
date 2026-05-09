@@ -72,7 +72,25 @@ client.on(Events.InteractionCreate, async interaction => {
      ephemeral: true
    });
   }
+ // /排行榜
+ if (interaction.commandName === '排行榜') {
 
+   const leaderboard = Object.entries(data)
+     .sort((a, b) => b[1].coins - a[1].coins)
+     .slice(0, 10);
+
+   let text = '🏆 星雨幣排行榜\\n\\n';
+
+   for (let i = 0; i < leaderboard.length; i++) {
+
+     const userId = leaderboard[i][0];
+     const coins = leaderboard[i][1].coins;
+
+     text += `${i + 1}. <@${userId}> - ${coins} 星雨幣\\n`;
+   }
+
+   await interaction.reply(text);
+}
 });
 
 client.login(process.env.TOKEN);

@@ -17,8 +17,12 @@ new SlashCommandBuilder()
 .setDescription('每日領取星雨幣'),
 
 new SlashCommandBuilder()
-.setName('錢包')
-.setDescription('查看你的星雨幣')
+  .setName('錢包')
+  .setDescription('查看你的星雨幣'),
+
+new SlashCommandBuilder()
+  .setName('排行榜')
+  .setDescription('查看星雨幣排行榜'),
 
 ].map(command => command.toJSON());
 
