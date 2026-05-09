@@ -6,7 +6,7 @@ const {
   Events,
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
   EmbedBuilder
 } = require('discord.js');
 
