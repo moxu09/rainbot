@@ -44,8 +44,39 @@ function saveData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
+
   console.log('Bot 已上線');
+
+  const channel =
+    await client.channels.fetch(
+      process.env.CHANNEL_ID
+    );
+
+  if (!channel) return;
+
+  const embed =
+    new EmbedBuilder()
+      .setTitle('☔ 星雨系統')
+      .setDescription(
+        '點擊下方按鈕查詢你的星雨幣'
+      );
+
+  const button =
+    new ButtonBuilder()
+      .setCustomId('check_coins')
+      .setLabel('查詢星雨幣')
+      .setStyle(ButtonStyle.Primary);
+
+  const row =
+    new ActionRowBuilder()
+      .addComponents(button);
+
+  await channel.send({
+    embeds: [embed],
+    components: [row]
+  });
+
 });
 
 client.on(Events.InteractionCreate, async interaction => {
