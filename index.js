@@ -171,15 +171,6 @@ client.on(Events.InteractionCreate, async interaction => {
   const data = loadData();
   const userId = interaction.user.id;
 
-  }
-
-});
-
-  if (!interaction.isChatInputCommand()) return;
-
-  const data = loadData();
-  const userId = interaction.user.id;
-
   // 建立玩家資料
   if (!data[userId]) {
     data[userId] = {
