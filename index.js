@@ -3,13 +3,21 @@ require('dotenv').config();
 const {
   Client,
   GatewayIntentBits,
-  Events
+  Events,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
 } = require('discord.js');
 
 const fs = require('fs');
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+intents: [
+  GatewayIntentBits.Guilds,
+  GatewayIntentBits.GuildMessages,
+  GatewayIntentBits.MessageContent
+]
+
 });
 
 const DATA_FILE = './data.json';
@@ -32,6 +40,137 @@ function saveData(data) {
 client.once(Events.ClientReady, () => {
   console.log('Bot 已上線');
 });
+
+client.on('messageCreate', async message => {
+
+  if (message.author.bot) return;
+
+  const random = Math.floor(Math.random() * 100);
+
+  if (random < 5) {
+
+    const reward = 50;
+
+    const button =
+      new ButtonBuilder()
+        .setCustomId('claim_rain')
+        .setLabel('領取星雨幣')
+        .setStyle(ButtonStyle.Primary);
+
+    const row =
+      new ActionRowBuilder()
+        .addComponents(button);
+
+    const dropMessage =
+      await message.channel.send({
+        content:
+`☔ 星雨幣掉落！
+
+前 10 個點擊的人，
+將隨機瓜分 50 星雨幣 ✨`,
+        components: [row]
+      });
+
+    const claimedUsers = [];
+
+    let remainingCoins = 50;
+
+    const collector =
+      dropMessage.createMessageComponentCollector({
+        time: 30000
+      });
+
+    collector.on('collect', async interaction => {
+
+      const userId = interaction.user.id;
+
+      if (claimedUsers.includes(userId)) {
+
+        return interaction.reply({
+          content: '你已經領過了 ☔',
+          ephemeral: true
+        });
+
+      }
+
+      if (claimedUsers.length >= 10) {
+
+        return interaction.reply({
+          content: '星雨幣已被領完！',
+          ephemeral: true
+        });
+
+      }
+
+      const data = loadData();
+
+      if (!data[userId]) {
+        data[userId] = {
+          coins: 0
+        };
+      }
+
+      let reward;
+
+      const leftPeople =
+        10 - claimedUsers.length;
+
+      if (leftPeople === 1) {
+
+        reward = remainingCoins;
+
+      } else {
+
+        reward =
+          Math.floor(
+            Math.random() *
+            (remainingCoins / 2)
+          ) + 1;
+
+      }
+
+      remainingCoins -= reward;
+
+      data[userId].coins += reward;
+
+      claimedUsers.push(userId);
+
+      saveData(data);
+
+      await interaction.reply({
+        content:
+`☔ 你搶到了 ${reward} 星雨幣！`,
+        ephemeral: true
+      });
+
+      if (
+        claimedUsers.length >= 10 ||
+        remainingCoins <= 0
+      ) {
+
+        collector.stop();
+
+        button.setDisabled(true);
+
+        await dropMessage.edit({
+          content:
+`☔ 星雨幣已被搶完！
+
+總共 50 星雨幣 ✨`,
+          components: [
+            new ActionRowBuilder()
+              .addComponents(button)
+          ]
+        });
+
+      }
+
+    });
+
+  }
+
+});
+
 
 client.on(Events.InteractionCreate, async interaction => {
 
