@@ -76,21 +76,24 @@ client.on(Events.InteractionCreate, async interaction => {
  if (interaction.commandName === '排行榜') {
 
    const leaderboard = Object.entries(data)
-     .sort((a, b) => b[1].coins - a[1].coins)
-     .slice(0, 10);
+     .sort((a, b) => b[1].coins - a[1].coins);
 
-   let text = '🏆 星雨幣排行榜\n\n';
+   const rank =
+     leaderboard.findIndex(
+       user => user[0] === userId
+     ) + 1;
 
-   for (let i = 0; i < leaderboard.length; i++) {
+   const coins = data[userId].coins;
 
-     const userId = leaderboard[i][0];
-     const coins = leaderboard[i][1].coins;
+   await interaction.reply({
+     content:
+ `🏆 你的排名：#${rank}
 
-     text += `${i + 1}. <@${userId}> - ${coins} 星雨幣\n`;
-   }
+ 💰 你的星雨幣：${coins}`,
+     ephemeral: true
+   });
 
-   await interaction.reply(text);
 }
-});
 
+});
 client.login(process.env.TOKEN);
