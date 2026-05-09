@@ -22,7 +22,7 @@ intents: [
 
 const DATA_FILE = './data.json';
 
-const shop = {
+let shop = {
   '95折券': 50,
   '9折券': 100,
   '85折券': 200
@@ -335,6 +335,68 @@ if (interaction.commandName === '購買') {
 `🛒 你購買了 ${item}！
 
 花費 ${price} 星雨幣`,
+    ephemeral: true
+  });
+
+}
+
+// /新增商品
+if (interaction.commandName === '新增商品') {
+
+  if (
+    interaction.guild.ownerId !== interaction.user.id
+  ) {
+    return interaction.reply({
+      content: '❌ 只有群組擁有者可以使用',
+      ephemeral: true
+    });
+  }
+
+  const item =
+    interaction.options.getString('商品');
+
+  const price =
+    interaction.options.getInteger('價格');
+
+  shop[item] = price;
+
+  await interaction.reply({
+    content:
+`✅ 已新增商品：
+
+${item} - ${price} 星雨幣`,
+    ephemeral: true
+  });
+
+}
+
+// /刪除商品
+if (interaction.commandName === '刪除商品') {
+
+  if (
+    interaction.guild.ownerId !== interaction.user.id
+  ) {
+    return interaction.reply({
+      content: '❌ 只有群組擁有者可以使用',
+      ephemeral: true
+    });
+  }
+
+  const item =
+    interaction.options.getString('商品');
+
+  if (!shop[item]) {
+    return interaction.reply({
+      content: '❌ 找不到這個商品',
+      ephemeral: true
+    });
+  }
+
+  delete shop[item];
+
+  await interaction.reply({
+    content:
+`🗑️ 已刪除商品：${item}`,
     ephemeral: true
   });
 

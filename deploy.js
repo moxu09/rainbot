@@ -71,6 +71,32 @@ new SlashCommandBuilder()
       .setRequired(true)
   ),
 
+new SlashCommandBuilder()
+  .setName('新增商品')
+  .setDescription('新增商店商品')
+  .addStringOption(option =>
+    option
+      .setName('商品')
+      .setDescription('商品名稱')
+      .setRequired(true)
+  )
+  .addIntegerOption(option =>
+    option
+      .setName('價格')
+      .setDescription('商品價格')
+      .setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName('刪除商品')
+  .setDescription('刪除商店商品')
+  .addStringOption(option =>
+    option
+      .setName('商品')
+      .setDescription('商品名稱')
+      .setRequired(true)
+  ),
+
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' })
