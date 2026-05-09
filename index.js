@@ -79,14 +79,14 @@ client.on(Events.InteractionCreate, async interaction => {
      .sort((a, b) => b[1].coins - a[1].coins)
      .slice(0, 10);
 
-   let text = '🏆 星雨幣排行榜\\n\\n';
+   let text = '🏆 星雨幣排行榜\n\n';
 
    for (let i = 0; i < leaderboard.length; i++) {
 
      const userId = leaderboard[i][0];
      const coins = leaderboard[i][1].coins;
 
-     text += `${i + 1}. <@${userId}> - ${coins} 星雨幣\\n`;
+     text += `${i + 1}. <@${userId}> - ${coins} 星雨幣\n`;
    }
 
    await interaction.reply(text);
