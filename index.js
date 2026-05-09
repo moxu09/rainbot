@@ -47,6 +47,7 @@ function saveData(data) {
 client.once(Events.ClientReady, async () => {
 
   console.log('Bot 已上線');
+  console.log(process.env.CHANNEL_ID);
 
   const channel =
     await client.channels.fetch(
