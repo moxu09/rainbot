@@ -6,9 +6,28 @@ const {
   Events
 } = require('discord.js');
 
+const fs = require('fs');
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
+
+const DATA_FILE = './data.json';
+
+// 如果 data.json 不存在就建立
+if (!fs.existsSync(DATA_FILE)) {
+  fs.writeFileSync(DATA_FILE, '{}');
+}
+
+// 讀取資料
+function loadData() {
+  return JSON.parse(fs.readFileSync(DATA_FILE));
+}
+
+// 儲存資料
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
 
 client.once(Events.ClientReady, () => {
   console.log('Bot 已上線');
@@ -18,10 +37,39 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (!interaction.isChatInputCommand()) return;
 
-  console.log(interaction.commandName);
+  const data = loadData();
+  const userId = interaction.user.id;
 
+  // 建立玩家資料
+  if (!data[userId]) {
+    data[userId] = {
+      coins: 0
+    };
+  }
+
+  // /ping
   if (interaction.commandName === 'ping') {
     await interaction.reply('Pong!');
+  }
+
+  // /簽到
+  if (interaction.commandName === '簽到') {
+
+    data[userId].coins += 100;
+
+    saveData(data);
+
+    await interaction.reply(
+      `✨ ${interaction.user.username} 獲得 100 星雨幣！`
+    );
+  }
+
+  // /錢包
+  if (interaction.commandName === '錢包') {
+
+    await interaction.reply(
+      `💰 你目前有 ${data[userId].coins} 星雨幣`
+    );
   }
 
 });
