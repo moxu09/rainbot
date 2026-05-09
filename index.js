@@ -68,7 +68,7 @@ client.on(Events.InteractionCreate, async interaction => {
       await interaction.reply({
         content:
 `💰 你目前有 ${data[userId].coins} 星雨幣`,
-        ephemeral: true
+        flags: 64
       });
 
     }
@@ -122,7 +122,7 @@ client.on('messageCreate', async message => {
 
         return interaction.reply({
           content: '你已經領過了 ☔',
-          ephemeral: true
+          flags: 64
         });
 
       }
@@ -167,7 +167,7 @@ client.on('messageCreate', async message => {
         await interaction.reply({
           content:
 `☔ 你搶到了 ${reward} 星雨幣！`,
-          ephemeral: true
+          flags: 64
         });
 
       }
@@ -236,7 +236,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
     await interaction.reply({
      content: `💰 你目前有 ${data[userId].coins} 星雨幣`,
-     ephemeral: true
+     flags: 64
    });
   }
 
@@ -249,7 +249,7 @@ if (interaction.commandName === '給予') {
   ) {
     return interaction.reply({
       content: '❌ 只有群組擁有者可以使用',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -272,7 +272,7 @@ if (interaction.commandName === '給予') {
   await interaction.reply({
     content:
 `✅ 已給予 ${target.username} ${amount} 星雨幣`,
-    ephemeral: true
+    flags: 64
   });
 
 }
@@ -286,7 +286,7 @@ if (interaction.commandName === '扣除') {
   ) {
     return interaction.reply({
       content: '❌ 只有群組擁有者可以使用',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -313,7 +313,7 @@ if (interaction.commandName === '扣除') {
   await interaction.reply({
     content:
 `❌ 已扣除 ${target.username} ${amount} 星雨幣`,
-    ephemeral: true
+    flags: 64
   });
 
 }
@@ -329,7 +329,7 @@ if (interaction.commandName === '商店') {
 
   await interaction.reply({
     content: text,
-    ephemeral: true
+    flags: 64
   });
 
 }
@@ -343,7 +343,7 @@ if (interaction.commandName === '購買') {
   if (!shop[item]) {
     return interaction.reply({
       content: '❌ 找不到這個商品',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -352,7 +352,7 @@ if (interaction.commandName === '購買') {
   if (data[userId].coins < price) {
     return interaction.reply({
       content: '❌ 星雨幣不足',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -365,7 +365,7 @@ if (interaction.commandName === '購買') {
 `🛒 你購買了 ${item}！
 
 花費 ${price} 星雨幣`,
-    ephemeral: true
+    flags: 64
   });
 
 }
@@ -378,7 +378,7 @@ if (interaction.commandName === '新增商品') {
   ) {
     return interaction.reply({
       content: '❌ 只有群組擁有者可以使用',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -395,7 +395,7 @@ if (interaction.commandName === '新增商品') {
 `✅ 已新增商品：
 
 ${item} - ${price} 星雨幣`,
-    ephemeral: true
+    flags: 64
   });
 
 }
@@ -408,7 +408,7 @@ if (interaction.commandName === '刪除商品') {
   ) {
     return interaction.reply({
       content: '❌ 只有群組擁有者可以使用',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -418,7 +418,7 @@ if (interaction.commandName === '刪除商品') {
   if (!shop[item]) {
     return interaction.reply({
       content: '❌ 找不到這個商品',
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -427,7 +427,7 @@ if (interaction.commandName === '刪除商品') {
   await interaction.reply({
     content:
 `🗑️ 已刪除商品：${item}`,
-    ephemeral: true
+    flags: 64
   });
 
 }
@@ -477,7 +477,7 @@ if (interaction.commandName === '星雨面板') {
  `🏆 你的排名：#${rank}
 
  💰 你的星雨幣：${coins}`,
-     ephemeral: true
+     flags:64
    });
 
 }
