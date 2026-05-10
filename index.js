@@ -194,22 +194,22 @@ client.once(Events.ClientReady, async () => {
 
   if (!process.env.CHANNEL_ID) {
     console.log('CHANNEL_ID 未設定');
-    return}
+    return;
   }
 
   if (!process.env.CHECKIN_CHANNEL_ID) {
     console.log('CHECKIN_CHANNEL_ID 未設定');
-    return}
+    return;
    }
 
   if (!process.env.TRANSFER_CHANNEL_ID) {
     console.log('TRANSFER_CHANNEL_ID 未設定');
-    return}  
+    return;  
   }
 
   if (!process.env.SHOP_CHANNEL_ID) {
     console.log('SHOP_CHANNEL_ID 未設定');
-    return}
+    return;
   }
 
     const walletChannel =
@@ -331,6 +331,47 @@ client.once(Events.ClientReady, async () => {
     components: [walletRow]
   });
 
+
+client.on(Events.InteractionCreate, async interaction => {
+
+  if (!interaction.isButton()) return;
+
+  // 查詢餘額
+  if (interaction.customId === 'check_coins') {
+
+    const userData =
+      await getUser(interaction.user.id);
+
+    return interaction.reply({
+      content:
+`💰 你目前有 ${userData.coins} 星雨幣`,
+      flags: 64
+    });
+
+  }
+
+  // 開啟轉帳
+  if (interaction.customId === 'open_transfer') {
+
+    const select =
+      new UserSelectMenuBuilder()
+        .setCustomId('select_transfer_user')
+        .setPlaceholder('選擇轉帳對象');
+
+    const row =
+      new ActionRowBuilder()
+        .addComponents(select);
+
+    return interaction.reply({
+      content: '請選擇轉帳對象',
+      components: [row],
+      flags: 64
+    });
+
+  }
+
+});
+
   const checkinRow =
     new ActionRowBuilder()
       .addComponents(checkinButton);
@@ -400,48 +441,6 @@ if (!shopData || shopData.length === 0) {
 
 } 
 
-  // 每日簽到
-    if (interaction.customId === 'daily_checkin') {
-
-      const userId = interaction.user.id;
-
-      const userData =
-        await getUser(userId);
-
-      const today =
-        new Date().toDateString();
-
-      if (userData.last_checkin === today) {
-
-        return interaction.reply({
-          content: '❌ 你今天已經簽到過了',
-          flags: 64
-        });
-
-      }
-
-      const newCoins =
-        userData.coins + 10;
-
-      await updateCoins(
-        userId,
-        newCoins
-      );
-
-      await updateCheckin(
-        userId,
-        today
-      );
-
-      return interaction.reply({
-        content:
-`✨ ${interaction.user.username} 簽到成功！
-
-獲得 10 星雨幣 ☔`,
-        flags: 64
-      });
-
-    }
 
 });
 
@@ -573,7 +572,54 @@ client.on('messageCreate', async message => {
 
 client.on(Events.InteractionCreate, async interaction => {
 
-  if (!interaction.isChatInputCommand()) return;
+  if (!interaction.isButton()) return;
+
+  // 每日簽到
+  if (interaction.customId === 'daily_checkin') {
+
+    const userId = interaction.user.id;
+
+    const userData =
+      await getUser(userId);
+
+    const today =
+      new Date().toDateString();
+
+    if (userData.last_checkin === today) {
+
+      return interaction.reply({
+        content: '❌ 你今天已經簽到過了',
+        flags: 64
+      });
+
+     }
+
+   });
+
+    const newCoins =
+      userData.coins + 10;
+
+    await updateCoins(
+      userId,
+      newCoins
+    );
+
+    await updateCheckin(
+      userId,
+      today
+    );
+
+    return interaction.reply({
+      content:
+`✨ ${interaction.user.username} 簽到成功！
+
+獲得 10 星雨幣 ☔`,
+      flags: 64
+    });
+
+  }
+
+});
 
   const userId = interaction.user.id;
 
