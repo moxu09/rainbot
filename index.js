@@ -16,19 +16,22 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder
+  EmbedBuilder,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
+  UserSelectMenuBuilder,
+  StringSelectMenuBuilder
 } = require('discord.js');
 
 
 const client = new Client({
-intents: [
-  GatewayIntentBits.Guilds,
-  GatewayIntentBits.GuildMessages,
-  GatewayIntentBits.MessageContent
-]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages
+  ]
 
 });
 
@@ -142,12 +145,21 @@ client.once(Events.ClientReady, async () => {
   const walletButton =
     new ButtonBuilder()
       .setCustomId('check_coins')
-      .setLabel('查詢星雨幣')
+      .setLabel('💰 餘額查詢')
+      .setStyle(ButtonStyle.Success);
+
+  const transferButton =
+    new ButtonBuilder()
+      .setCustomId('open_transfer')
+      .setLabel('💸 星雨轉帳')
       .setStyle(ButtonStyle.Primary);
 
   const walletRow =
     new ActionRowBuilder()
-      .addComponents(walletButton);
+      .addComponents(
+        walletButton,
+        transferButton
+      );
 
   const checkinButton =
     new ButtonBuilder()
@@ -158,16 +170,44 @@ client.once(Events.ClientReady, async () => {
   await walletChannel.send({
     embeds: [
       new EmbedBuilder()
-        .setColor('#5865F2')
-        .setTitle('💰 星雨錢包')
+        .setColor('#00D26A')
+        .setTitle('🏦 星雨銀行 ATM')
         .setDescription(
-  `🏧 歡迎使用星雨ATM
+  `╔════════════╗
+  💳 歡迎使用 星雨ATM
+  ╚════════════╝
 
-  點擊下方按鈕即可隱密查詢星雨幣`
+  💰 查詢餘額
+  💸 星雨轉帳
+  🔒 安全交易系統
+
+  請點擊下方按鈕操作`
         )
-        .setThumbnail('https://t14.pimg.jp/132/296/034/1/132296034.jpg')
+        .addFields(
+          {
+            name: '🏧 ATM 狀態',
+            value: '🟢 線上服務中',
+            inline: true
+          },
+          {
+            name: '☔ 幣別',
+            value: '星雨幣',
+            inline: true
+          },
+          { 
+            name: '🔒 安全系統',
+            value: '已啟用',
+            inline: true
+          }
+        )
+        .setThumbnail(
+          'https://cdn-icons-png.flaticon.com/512/2830/2830284.png'
+        )
+        .setImage(
+          'https://images.unsplash.com/photo-1556740749-887f6717d7e4'
+        )
         .setFooter({
-          text: '星雨系統'
+          text: 'Rain Bank ATM System'
         })
         .setTimestamp()
     ],
@@ -219,68 +259,34 @@ client.on(Events.InteractionCreate, async interaction => {
 
     }
 
-    const transferButton =
-      new ButtonBuilder()
-        .setCustomId('open_transfer')
-        .setLabel('星雨轉帳')
-        .setStyle(ButtonStyle.Danger);
 
-    const transferRow =
-      new ActionRowBuilder()
-        .addComponents(transferButton);
-
-    await transferChannel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('#ED4245')
-          .setTitle('💸 星雨轉帳')
-          .setDescription(
-    `點擊下方按鈕即可轉帳星雨幣`
-          )
-          .setFooter({
-            text: '星雨銀行'
-          })
-          .setTimestamp()
-      ],
-      components: [transferRow]
-    });
-
-    // 開啟轉帳視窗
+    // 開啟轉帳玩家選單
     if (interaction.customId === 'open_transfer') {
 
-      const modal =
-        new ModalBuilder()
-          .setCustomId('transfer_modal')
-          .setTitle('星雨轉帳');
+      const userMenu = 
+        new UserSelectMenuBuilder()
+          .setCustomId('select_transfer_user')
+          .setPlaceholder('選擇轉帳對象')
+          .setMinValues(1)
+          .setMaxValues(1);
 
-      const userInput =
-        new TextInputBuilder()
-          .setCustomId('target_id')
-          .setLabel('對方 Discord ID')
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true);
-
-      const amountInput =
-        new TextInputBuilder()
-          .setCustomId('transfer_amount')
-          .setLabel('轉帳金額')
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true);
-
-      const row1 =
+      const row =
         new ActionRowBuilder()
-          .addComponents(userInput);
+          .addComponents(userMenu);
 
-      const row2 =
-        new ActionRowBuilder()
-          .addComponents(amountInput);
-
-      modal.addComponents(
-        row1,
-        row2
-      );
-
-      return interaction.showModal(modal);
+      
+return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('#ED4245')
+            .setTitle('💸 選擇轉帳對象')
+            .setDescription(
+              '請選擇要轉帳的玩家'
+            )
+         ],
+        components: [row],
+        flags: 64
+      });
 
     }
 
@@ -797,91 +803,167 @@ client.on(
   Events.InteractionCreate,
   async interaction => {
 
-    if (!interaction.isModalSubmit()) return;
+if (!interaction.isModalSubmit()) return;
+if (
+  interaction.customId.startsWith(
+    'transfer_modal_'
+  )
+) {
+
+  const targetId =
+    interaction.customId.split('_')[2];
+
+  const amount =
+    parseInt(
+      interaction.fields.getTextInputValue(
+        'transfer_amount'
+      )
+    );
+
+  // 金額檢查
+  if (isNaN(amount) || amount <= 0) {
+
+    return interaction.reply({
+      content: '❌ 金額錯誤，請再輸入一次',
+      flags: 64
+    });
+
+  }
+
+  const senderId =
+    interaction.user.id;
+
+  // 不能轉給自己
+  if (targetId === senderId) {
+
+    return interaction.reply({
+      content: '❌ 不能轉帳給自己哦！',
+      flags: 64
+    });
+
+  }
+
+  const senderData =
+    await getUser(senderId);
+
+  // 餘額不足
+  if (senderData.coins < amount) {
+
+    return interaction.reply({
+      content: '❌ 餘額不足，快去存錢吧！',
+      flags: 64
+    });
+
+  }
+
+  const targetData =
+    await getUser(targetId);
+
+  // 扣款
+  await updateCoins(
+    senderId,
+    senderData.coins - amount
+  );
+
+  // 加款
+  await updateCoins(
+    targetId,
+    targetData.coins + amount
+  );
+
+  // 通知收款人
+  try {
+
+    const targetUser =
+      await client.users.fetch(targetId);
+
+    await targetUser.send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#57F287')
+          .setTitle('💸 收到星雨轉帳')
+          .setDescription(
+`你收到了一筆新的星雨幣！
+
+👤 來自：${interaction.user.username}
+☔ 金額：${amount} 星雨幣`
+          )
+          .setFooter({
+            text: 'Rain Bank 通知'
+          })
+          .setTimestamp()
+      ]
+    });
+
+  } catch (err) {
+
+    console.log('無法通知玩家');
+
+  }
+
+  return interaction.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor('#57F287')
+        .setTitle('✅ 轉帳成功')
+        .setDescription(
+  `💸 收款人：<@${targetId}>
+
+  ☔ 金額：${amount} 星雨幣
+
+  🏦 Rain Bank 已完成交易`
+        )
+        .setFooter({
+          text: '星雨銀行 ATM'
+        })
+        .setTimestamp()
+    ],
+    flags: 64
+  });
+
+}
+
+});
+
+
+// 選擇轉帳對象
+client.on(
+  Events.InteractionCreate,
+  async interaction => {
+
+    if (!interaction.isUserSelectMenu()) return;
 
     if (
-      interaction.customId === 'transfer_modal'
+      interaction.customId ===
+      'select_transfer_user'
     ) {
 
       const targetId =
-        interaction.fields.getTextInputValue(
-          'target_id'
-        );
+        interaction.values[0];
 
-      const amount =
-        parseInt(
-          interaction.fields.getTextInputValue(
-            'transfer_amount'
+      const modal =
+        new ModalBuilder()
+          .setCustomId(
+            `transfer_modal_${targetId}`
           )
-        );
+          .setTitle('星雨轉帳');
 
-      const senderId =
-        interaction.user.id;
+      const amountInput =
+        new TextInputBuilder()
+          .setCustomId('transfer_amount')
+          .setLabel('輸入轉帳金額')
+          .setStyle(
+            TextInputStyle.Short
+          )
+          .setRequired(true);
 
-      // 不能轉給自己喔！
-      if (targetId === senderId) {
+      const row =
+        new ActionRowBuilder()
+          .addComponents(amountInput);
 
-        return interaction.reply({
-          content: '❌ 不能轉帳給自己哦！',
-          flags: 64
-        });
+      modal.addComponents(row);
 
-      }
-
-      // 金額檢查
-      if (isNaN(amount) || amount <= 0) {
-
-        return interaction.reply({
-          content: '❌ 金額錯誤，請再輸入一次',
-          flags: 64
-        });
-
-      }
-
-      const senderData =
-        await getUser(senderId);
-
-      // 錢不夠
-      if (senderData.coins < amount) {
-
-        return interaction.reply({
-          content: '❌ 餘額不足，快去存錢吧！',
-          flags: 64
-        });
-
-      }
-
-      const targetData =
-        await getUser(targetId);
-
-      // 扣款
-      await updateCoins(
-        senderId,
-        senderData.coins - amount
-      );
-
-      // 加款
-      await updateCoins(
-        targetId,
-        targetData.coins + amount
-      );
-
-      await interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('#57F287')
-            .setTitle('✅ 轉帳成功')
-            .setDescription(
-`👤 對象：
-<@${targetId}>
-
-💰 金額：
-${amount} 星雨幣`
-            )
-            .setTimestamp()
-        ],
-        flags: 64
-      });
+      await interaction.showModal(modal);
 
     }
 
