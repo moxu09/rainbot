@@ -30,12 +30,21 @@ intents: [
 });
 
 
-let shop = {
-  '95折券': 50,
-  '9折券': 100,
-  '85折券': 200
-};
+  async function getShop() {
 
+    const { data, error } =
+      await supabase
+        .from('shop')
+        .select('*');
+
+    if (error) {
+      console.log(error);
+      return [];
+    }
+
+    return data;
+
+  }
 
 // 讀取資料
 async function getUser(userId) {
@@ -95,17 +104,24 @@ async function updateCheckin(userId, date) {
 
 client.once(Events.ClientReady, async () => {
 
+  console.log('新版BOT啟動成功');
   console.log('Bot 已上線');
   console.log(process.env.CHANNEL_ID);
 
-  const channel =
+  const walletChannel =
     client.channels.cache.get(
       process.env.CHANNEL_ID
     );
+ 
+  const checkinChannel =
+    client.channels.cache.get(
+      process.env.CHECKIN_CHANNEL_ID
+    );
 
-  console.log(channel);
-
-  if (!channel) {
+  console.log(walletChannel);
+  console.log(checkinChannel);
+  
+  if (!walletChannel || !checkinChannel) {
     console.log('找不到頻道');
     return;
   }
@@ -123,22 +139,47 @@ client.once(Events.ClientReady, async () => {
       .setLabel('查詢星雨幣')
       .setStyle(ButtonStyle.Primary);
 
+  const row =
+    new ActionRowBuilder()
+      .addComponents(button);
+
+  const walletButton =
+    new ButtonBuilder()
+      .setCustomId('check_coins')
+      .setLabel('查詢星雨幣')
+      .setStyle(ButtonStyle.Primary);
+
+  const walletRow =
+    new ActionRowBuilder()
+      .addComponents(walletButton);
+
   const checkinButton =
     new ButtonBuilder()
       .setCustomId('daily_checkin')
       .setLabel('每日簽到')
       .setStyle(ButtonStyle.Success);
 
-  const row =
-    new ActionRowBuilder()
-      .addComponents(
-        button,
-        checkinButton
-      );
+  await walletChannel.send({
+    embeds: [
+      new EmbedBuilder()
+        .setTitle('💰 星雨錢包')
+        .setDescription('點擊按鈕查詢星雨幣')
+    ],
+    components: [walletRow]
+  });
 
-  await channel.send({
-    embeds: [embed],
-    components: [row]
+
+  const checkinRow =
+    new ActionRowBuilder()
+      .addComponents(checkinButton);
+
+  await checkinChannel.send({
+    embeds: [
+      new EmbedBuilder()
+        .setTitle('☔ 每日簽到')
+        .setDescription('點擊按鈕每日簽到')
+    ],
+    components: [checkinRow]
   });
 
 });
@@ -164,44 +205,44 @@ client.on(Events.InteractionCreate, async interaction => {
 
     }
 
-  if (interaction.customId === 'daily_checkin') {
+  // 每日簽到
+    if (interaction.customId === 'daily_checkin') {
 
-    const userId = interaction.user.id;
+      const userId = interaction.user.id;
 
-    const userData =
-      await getUser(userId);
+      const userData =
+        await getUser(userId);
 
-    const today =
-      new Date().toDateString();
+      const today =
+        new Date().toDateString();
 
-    // 已簽到
-    if (userData.last_checkin === today) {
+      if (userData.last_checkin === today) {
 
-      return interaction.reply({
-        content: '❌ 你今天已經簽到過了',
-        flags: 64
-      });
-  
-    }
+        return interaction.reply({
+          content: '❌ 你今天已經簽到過了',
+          flags: 64
+        });
 
-    const newCoins =
-      userData.coins + 100;
+      }
+
+      const newCoins =
+        userData.coins + 100;
 
       await updateCoins(
         userId,
         newCoins
-      ); 
+      );
 
       await updateCheckin(
         userId,
         today
       );
 
-      await interaction.reply({
-      content:
-  `✨ ${interaction.user.username} 簽到成功！
+      return interaction.reply({
+        content:
+`✨ ${interaction.user.username} 簽到成功！
 
-   獲得 100 星雨幣 ☔`,
+獲得 100 星雨幣 ☔`,
         flags: 64
       });
 
@@ -215,7 +256,8 @@ client.on('messageCreate', async message => {
 
   if (message.author.bot) return;
 
-  const random = Math.floor(Math.random() * 100);
+  const random =
+    Math.floor(Math.random() * 100);
 
   if (random < 5) {
 
@@ -227,10 +269,7 @@ client.on('messageCreate', async message => {
 
     const row =
       new ActionRowBuilder()
-        .addComponents(
-          button,
-          checkinButton
-        );
+        .addComponents(button);
 
     const dropMessage =
       await message.channel.send({
@@ -253,7 +292,12 @@ client.on('messageCreate', async message => {
 
     collector.on('collect', async interaction => {
 
-      const userId = interaction.user.id;
+      if (
+        interaction.customId !== 'claim_rain'
+      ) return;
+
+      const userId =
+        interaction.user.id;
 
       if (claimedUsers.includes(userId)) {
 
@@ -264,49 +308,45 @@ client.on('messageCreate', async message => {
 
       }
 
-      if (!claimedUsers.includes(userId)) {
+      const userData =
+        await getUser(userId);
 
-        const userData =
-          await getUser(userId);
+      let reward;
 
-        let reward;
+      const leftPeople =
+        10 - claimedUsers.length;
 
-        const leftPeople =
-          10 - claimedUsers.length;
+      if (leftPeople === 1) {
 
-        if (leftPeople === 1) {
+        reward = remainingCoins;
 
-          reward = remainingCoins;
+      } else {
 
-        } else {
+        reward =
+          Math.floor(
+            Math.random() *
+            (remainingCoins / 2)
+          ) + 1;
 
-          reward =
-            Math.floor(
-              Math.random() *
-              (remainingCoins / 2)
-            ) + 1;
-
-        }
-
-        remainingCoins -= reward;
- 
-        const newCoins =
-           userData.coins + reward;
-
-        await updateCoins(
-          userId,
-          newCoins
-        );
-
-        claimedUsers.push(userId);
-
-        await interaction.reply({
-          content:
-      `☔ 你搶到了 ${reward} 星雨幣！`,
-          flags: 64
-        });
- 
       }
+
+      remainingCoins -= reward;
+
+      const newCoins =
+        userData.coins + reward;
+
+      await updateCoins(
+        userId,
+        newCoins
+      );
+
+      claimedUsers.push(userId);
+
+      await interaction.reply({
+        content:
+`☔ 你搶到了 ${reward} 星雨幣！`,
+        flags: 64
+      });
 
       if (
         claimedUsers.length >= 10 ||
@@ -315,7 +355,9 @@ client.on('messageCreate', async message => {
 
         collector.stop();
 
-        button.setDisabled(true);
+        const disabledButton =
+          ButtonBuilder.from(button)
+            .setDisabled(true);
 
         await dropMessage.edit({
           content:
@@ -324,7 +366,7 @@ client.on('messageCreate', async message => {
 總共 50 星雨幣 ✨`,
           components: [
             new ActionRowBuilder()
-              .addComponents(button)
+              .addComponents(disabledButton)
           ]
         });
 
@@ -332,7 +374,7 @@ client.on('messageCreate', async message => {
 
     });
 
- }
+  }
 
 });
 
@@ -484,9 +526,15 @@ if (interaction.commandName === '商店') {
 
   let text = '🛒 星雨商店\n\n';
 
-  for (const item in shop) {
-    text += `✨ ${item} - ${shop[item]} 星雨幣\n`;
-  }
+    const shopData =
+      await getShop();
+
+    shopData.forEach(item => {
+
+      text +=
+    `✨ ${item.item_name} - ${item.price} 星雨幣\n`;
+
+    });
 
   await interaction.reply({
     content: text,
@@ -501,14 +549,21 @@ if (interaction.commandName === '購買') {
   const item =
     interaction.options.getString('商品');
 
-  if (!shop[item]) {
+  const { data: shopItem } =
+    await supabase
+      .from('shop')
+      .select('*')
+      .eq('item_name', item)
+      .single();
+
+  if (!shopItem) {
     return interaction.reply({
       content: '❌ 找不到這個商品',
       flags: 64
     });
   }
 
-  const price = shop[item];
+  const price = shopItem.price;
 
   if (userData.coins < price){
     return interaction.reply({
@@ -553,8 +608,14 @@ if (interaction.commandName === '新增商品') {
   const price =
     interaction.options.getInteger('價格');
 
-  shop[item] = price;
-
+    await supabase
+      .from('shop')
+      .insert([
+        {
+          item_name: item,
+          price: price
+        }
+      ]);
   await interaction.reply({
     content:
 `✅ 已新增商品：
@@ -580,49 +641,33 @@ if (interaction.commandName === '刪除商品') {
   const item =
     interaction.options.getString('商品');
 
-  if (!shop[item]) {
+  const { data: shopItem } =
+    await supabase
+      .from('shop')
+      .select('*')
+      .eq('item_name', item)
+      .single();
+
+  if (!shopItem) {
     return interaction.reply({
       content: '❌ 找不到這個商品',
       flags: 64
     });
   }
 
-  delete shop[item];
+  await supabase
+    .from('shop')
+    .delete()
+    .eq('item_name', item);
 
   await interaction.reply({
-    content:
+    content: 
 `🗑️ 已刪除商品：${item}`,
-    flags: 64
+      flags: 64
   });
 
 }
 
-// /星雨面板
-if (interaction.commandName === '星雨面板') {
-
-  const embed =
-    new EmbedBuilder()
-      .setTitle('☔ 星雨系統')
-      .setDescription(
-        '點擊下方按鈕查詢你的星雨幣'
-      );
-
-  const button =
-    new ButtonBuilder()
-      .setCustomId('check_coins')
-      .setLabel('查詢星雨幣')
-      .setStyle(ButtonStyle.Primary);
-
-  const row =
-    new ActionRowBuilder()
-      .addComponents(button);
-
-  await interaction.reply({
-    embeds: [embed],
-    components: [row]
-  });
-
-}
 
 // /排行榜
 if (interaction.commandName === '排行榜') {
