@@ -104,6 +104,7 @@ async function updateCheckin(userId, date) {
 
 client.once(Events.ClientReady, async () => {
 
+  console.log('Railway 最新版本啟動');
   console.log('新版BOT啟動成功');
   console.log('Bot 已上線');
   console.log(process.env.CHANNEL_ID);
@@ -162,12 +163,21 @@ client.once(Events.ClientReady, async () => {
   await walletChannel.send({
     embeds: [
       new EmbedBuilder()
+        .setColor('#5865F2')
         .setTitle('💰 星雨錢包')
-        .setDescription('點擊按鈕查詢星雨幣')
+        .setDescription(
+  `🏧 歡迎使用星雨ATM
+
+  點擊下方按鈕即可隱密查詢星雨幣`
+        )
+        .setThumbnail('https://t14.pimg.jp/132/296/034/1/132296034.jpg')
+        .setFooter({
+          text: '星雨系統'
+        })
+        .setTimestamp()
     ],
     components: [walletRow]
   });
-
 
   const checkinRow =
     new ActionRowBuilder()
@@ -176,8 +186,17 @@ client.once(Events.ClientReady, async () => {
   await checkinChannel.send({
     embeds: [
       new EmbedBuilder()
+        .setColor('#57F287')
         .setTitle('☔ 每日簽到')
-        .setDescription('點擊按鈕每日簽到')
+        .setDescription(
+  `✨ 每日可簽到一次
+
+  完成簽到即可獲得 100 星雨幣`
+        )
+        .setFooter({
+          text: '星雨系統'
+        })
+        .setTimestamp()
     ],
     components: [checkinRow]
   });
