@@ -74,14 +74,15 @@ async function updateCoins(userId, coins) {
 
   await supabase
     .from('users')
-    .update({
-      coins: coins
-    })
-    .eq('user_id', userId);
+    .upsert([
+      {
+        user_id: userId,
+        coins: coins
+      }
+    ]);
 
 }
 
-// 新增在這裡
 async function updateCheckin(userId, date) {
 
   await supabase
@@ -123,18 +124,9 @@ client.once(Events.ClientReady, async () => {
       .setLabel('查詢星雨幣')
       .setStyle(ButtonStyle.Primary);
 
-  const checkinButton =
-    new ButtonBuilder()
-      .setCustomId('daily_checkin')
-      .setLabel('每日簽到')
-      .setStyle(ButtonStyle.Success);
-
   const row =
     new ActionRowBuilder()
-      .addComponents(
-        button,
-        checkinButton
-      );
+      .addComponents(button);
 
   await channel.send({
     embeds: [embed],
@@ -164,49 +156,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
     }
 
-  if (interaction.customId === 'daily_checkin') {
-
-    const userId = interaction.user.id;
-
-    const userData =
-      await getUser(userId);
-
-    const today =
-      new Date().toDateString();
-
-    // 已簽到
-    if (userData.last_checkin === today) {
-
-      return interaction.reply({
-        content: '❌ 你今天已經簽到過了',
-        flags: 64
-      });
-  
-    }
-
-    const newCoins =
-      userData.coins + 100;
-
-      await updateCoins(
-        userId,
-        newCoins
-      ); 
-
-      await updateCheckin(
-        userId,
-        today
-      );
-
-      await interaction.reply({
-      content:
-  `✨ ${interaction.user.username} 簽到成功！
-
-   獲得 100 星雨幣 ☔`,
-        flags: 64
-      });
-
-    }
-
   }
 
 });
@@ -227,10 +176,7 @@ client.on('messageCreate', async message => {
 
     const row =
       new ActionRowBuilder()
-        .addComponents(
-          button,
-          checkinButton
-        );
+        .addComponents(button);
 
     const dropMessage =
       await message.channel.send({
