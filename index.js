@@ -127,23 +127,6 @@ client.once(Events.ClientReady, async () => {
     return;
   }
 
-  const embed =
-    new EmbedBuilder()
-      .setTitle('☔ 星雨系統')
-      .setDescription(
-        '點擊下方按鈕查詢你的星雨幣'
-      );
-
-  const button =
-    new ButtonBuilder()
-      .setCustomId('check_coins')
-      .setLabel('查詢星雨幣')
-      .setStyle(ButtonStyle.Primary);
-
-  const row =
-    new ActionRowBuilder()
-      .addComponents(button);
-
   const walletButton =
     new ButtonBuilder()
       .setCustomId('check_coins')
