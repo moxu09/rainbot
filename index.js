@@ -1062,34 +1062,15 @@ client.on(
           console.log('通知失敗');
 
         }
+ 
+      return interaction.reply({
+        content:
+      `✅ 轉帳成功！
 
-        // 回覆成功
-        if (
-          interaction.replied ||
-          interaction.deferred
-        ) {
-
-          await interaction.followUp({
-            content:
-`✅ 轉帳成功！
-
-💸 轉給 <@${targetId}>
-☔ 金額：${amount} 星雨幣`,
-            flags: 64
-          });
-
-        } else {
-
-          await interaction.reply({
-            content:
-`✅ 轉帳成功！
-
-💸 轉給 <@${targetId}>
-☔ 金額：${amount} 星雨幣`,
-            flags: 64
-          });
-
-        }
+      💸 轉給 <@${targetId}>
+      ☔ 金額：${amount} 星雨幣`,
+        flags: 64
+      });
 
       }
 
