@@ -17,6 +17,9 @@ const {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle
 } = require('discord.js');
 
 
@@ -119,10 +122,19 @@ client.once(Events.ClientReady, async () => {
       process.env.CHECKIN_CHANNEL_ID
     );
 
+  const transferChannel =
+    await client.channels.fetch(
+      process.env.TRANSFER_CHANNEL_ID
+    );
+
   console.log(walletChannel);
   console.log(checkinChannel);
   
-  if (!walletChannel || !checkinChannel) {
+  if (
+    !walletChannel ||
+    !checkinChannel ||
+    !transferChannel
+  ) {
     console.log('找不到頻道');
     return;
   }
@@ -204,6 +216,71 @@ client.on(Events.InteractionCreate, async interaction => {
   `💰 你目前有 ${userData.coins} 星雨幣`,
         flags: 64
       });
+
+    }
+
+    const transferButton =
+      new ButtonBuilder()
+        .setCustomId('open_transfer')
+        .setLabel('星雨轉帳')
+        .setStyle(ButtonStyle.Danger);
+
+    const transferRow =
+      new ActionRowBuilder()
+        .addComponents(transferButton);
+
+    await transferChannel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#ED4245')
+          .setTitle('💸 星雨轉帳')
+          .setDescription(
+    `點擊下方按鈕即可轉帳星雨幣`
+          )
+          .setFooter({
+            text: '星雨銀行'
+          })
+          .setTimestamp()
+      ],
+      components: [transferRow]
+    });
+
+    // 開啟轉帳視窗
+    if (interaction.customId === 'open_transfer') {
+
+      const modal =
+        new ModalBuilder()
+          .setCustomId('transfer_modal')
+          .setTitle('星雨轉帳');
+
+      const userInput =
+        new TextInputBuilder()
+          .setCustomId('target_id')
+          .setLabel('對方 Discord ID')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true);
+
+      const amountInput =
+        new TextInputBuilder()
+          .setCustomId('transfer_amount')
+          .setLabel('轉帳金額')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true);
+
+      const row1 =
+        new ActionRowBuilder()
+          .addComponents(userInput);
+
+      const row2 =
+        new ActionRowBuilder()
+          .addComponents(amountInput);
+
+      modal.addComponents(
+        row1,
+        row2
+      );
+
+      return interaction.showModal(modal);
 
     }
 
@@ -714,4 +791,100 @@ if (interaction.commandName === '排行榜') {
 }
 
 });
+
+// Modal 轉帳
+client.on(
+  Events.InteractionCreate,
+  async interaction => {
+
+    if (!interaction.isModalSubmit()) return;
+
+    if (
+      interaction.customId === 'transfer_modal'
+    ) {
+
+      const targetId =
+        interaction.fields.getTextInputValue(
+          'target_id'
+        );
+
+      const amount =
+        parseInt(
+          interaction.fields.getTextInputValue(
+            'transfer_amount'
+          )
+        );
+
+      const senderId =
+        interaction.user.id;
+
+      // 不能轉給自己喔！
+      if (targetId === senderId) {
+
+        return interaction.reply({
+          content: '❌ 不能轉帳給自己哦！',
+          flags: 64
+        });
+
+      }
+
+      // 金額檢查
+      if (isNaN(amount) || amount <= 0) {
+
+        return interaction.reply({
+          content: '❌ 金額錯誤，請再輸入一次',
+          flags: 64
+        });
+
+      }
+
+      const senderData =
+        await getUser(senderId);
+
+      // 錢不夠
+      if (senderData.coins < amount) {
+
+        return interaction.reply({
+          content: '❌ 餘額不足，快去存錢吧！',
+          flags: 64
+        });
+
+      }
+
+      const targetData =
+        await getUser(targetId);
+
+      // 扣款
+      await updateCoins(
+        senderId,
+        senderData.coins - amount
+      );
+
+      // 加款
+      await updateCoins(
+        targetId,
+        targetData.coins + amount
+      );
+
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('#57F287')
+            .setTitle('✅ 轉帳成功')
+            .setDescription(
+`👤 對象：
+<@${targetId}>
+
+💰 金額：
+${amount} 星雨幣`
+            )
+            .setTimestamp()
+        ],
+        flags: 64
+      });
+
+    }
+
+});
+
 client.login(process.env.TOKEN);
