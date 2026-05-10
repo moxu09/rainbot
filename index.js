@@ -356,11 +356,7 @@ client.once(Events.ClientReady, async () => {
 const shopData =
   await getShop();
 
-// 商店沒有商品
-const shopData =
-  await getShop();
-
-// 商店沒有商品
+// 如果商店沒有商品
 if (!shopData || shopData.length === 0) {
 
   console.log('商店目前沒有商品');
@@ -370,8 +366,7 @@ if (!shopData || shopData.length === 0) {
   const options =
     shopData.map(item => ({
       label: item.item_name,
-      description:
-        `${item.price} 星雨幣`,
+      description: `${item.price} 星雨幣`,
       value: item.item_name
     }));
 
@@ -395,59 +390,15 @@ if (!shopData || shopData.length === 0) {
 
 請使用下方選單購買商品`
         )
+        .setFooter({
+          text: 'Rain Shop System'
+        })
+        .setTimestamp()
     ],
     components: [shopRow]
   });
 
-}
-
-client.on(Events.InteractionCreate, async interaction => {
-
-  // 不是按鈕就離開
-  if (!interaction.isButton()) return;
-
-  // 查詢星雨幣
-  if (interaction.customId === 'check_coins') {
-
-    const userId = interaction.user.id;
-
-    const userData =
-      await getUser(userId);
-
-    return interaction.reply({
-      content:
-`💰 你目前有 ${userData.coins} 星雨幣`,
-      flags: 64
-    });
-
-  }
-
-  // 開啟轉帳
-  if (interaction.customId === 'open_transfer') {
-
-    const userMenu =
-      new UserSelectMenuBuilder()
-        .setCustomId('select_transfer_user')
-        .setPlaceholder('選擇轉帳對象')
-        .setMinValues(1)
-        .setMaxValues(1);
-
-    const row =
-      new ActionRowBuilder()
-        .addComponents(userMenu);
-
-    return interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('#ED4245')
-          .setTitle('💸 選擇轉帳對象')
-          .setDescription('請選擇要轉帳的玩家')
-      ],
-      components: [row],
-      flags: 64
-    });
-
-  } 
+} 
 
   // 每日簽到
     if (interaction.customId === 'daily_checkin') {
