@@ -1317,24 +1317,26 @@ client.on(
         shopItem.price
      );
 
-    // 回覆
-    await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('#57F287')
-          .setTitle('🛒 購買成功')
-          .setDescription(
+    
+// 回覆
+await interaction.reply({
+  embeds: [
+    new EmbedBuilder()
+      .setColor('#57F287')
+      .setTitle('🛒 購買成功')
+      .setDescription(
 `商品：${item}
 
 🎁 序號：
 ${code}
 
 已扣除 ${shopItem.price} 星雨幣`
-          )
-      ],
-      flags: 64
-    });
-  
+      )
+      .setTimestamp()
+  ],
+  flags: 64
+});
+
   }
 
 });
