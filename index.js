@@ -110,12 +110,12 @@ client.once(Events.ClientReady, async () => {
   console.log(process.env.CHANNEL_ID);
 
   const walletChannel =
-    client.channels.cache.get(
+    await client.channels.fetch(
       process.env.CHANNEL_ID
     );
- 
+
   const checkinChannel =
-    client.channels.cache.get(
+    await client.channels.fetch(
       process.env.CHECKIN_CHANNEL_ID
     );
 
@@ -174,7 +174,7 @@ client.once(Events.ClientReady, async () => {
         .setDescription(
   `✨ 每日可簽到一次
 
-  完成簽到即可獲得 100 星雨幣`
+  完成簽到即可獲得 10 星雨幣`
         )
         .setFooter({
           text: '星雨系統'
@@ -228,7 +228,7 @@ client.on(Events.InteractionCreate, async interaction => {
       }
 
       const newCoins =
-        userData.coins + 100;
+        userData.coins + 10;
 
       await updateCoins(
         userId,
@@ -244,7 +244,7 @@ client.on(Events.InteractionCreate, async interaction => {
         content:
 `✨ ${interaction.user.username} 簽到成功！
 
-獲得 100 星雨幣 ☔`,
+獲得 10 星雨幣 ☔`,
         flags: 64
       });
 
