@@ -126,6 +126,28 @@ async function addTransferRecord(
 
 }
 
+async function createRedeemCode(value) {
+
+  const code =
+    Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase();
+
+  await supabase
+    .from('redeem_codes')
+    .insert([
+      {
+        code: code,
+        value: value,
+        used: false
+      }
+    ]);
+
+  return code;
+
+}
+
 async function clearOldMessages(channel, title) {
 
   const messages =
@@ -172,18 +194,22 @@ client.once(Events.ClientReady, async () => {
 
   if (!process.env.CHANNEL_ID) {
     console.log('CHANNEL_ID 未設定');
+    return}
   }
 
   if (!process.env.CHECKIN_CHANNEL_ID) {
     console.log('CHECKIN_CHANNEL_ID 未設定');
-  }
+    return}
+   }
 
   if (!process.env.TRANSFER_CHANNEL_ID) {
     console.log('TRANSFER_CHANNEL_ID 未設定');
+    return}  
   }
 
   if (!process.env.SHOP_CHANNEL_ID) {
     console.log('SHOP_CHANNEL_ID 未設定');
+    return}
   }
 
     const walletChannel =
@@ -224,9 +250,6 @@ client.once(Events.ClientReady, async () => {
       setTimeout(resolve, 2000)
     );
 
-  console.log(walletChannel);
-  console.log(checkinChannel);
-  
   if (
     !walletChannel ||
     !checkinChannel ||
@@ -330,49 +353,53 @@ client.once(Events.ClientReady, async () => {
     components: [checkinRow]
   });
 
-    const shopData =
-      await getShop();
+const shopData =
+  await getShop();
 
-    const options =
-      shopData.map(item => ({
-        label: item.item_name,
-        description:
-          `${item.price} 星雨幣`,
-        value: item.item_name
-      }));
+// 商店沒有商品
+const shopData =
+  await getShop();
 
-    const selectMenu =
-      new StringSelectMenuBuilder()
-        .setCustomId('shop_select')
-        .setPlaceholder('選擇要購買的商品')
-        .addOptions(options);
+// 商店沒有商品
+if (!shopData || shopData.length === 0) {
 
-    const shopRow =
-      new ActionRowBuilder()
-        .addComponents(selectMenu);
+  console.log('商店目前沒有商品');
 
-    await shopChannel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setColor('#5865F2')
-          .setTitle('🛒 星雨商店')
-          .setDescription(
-    `✨ 歡迎來到星雨商店
+} else {
 
-    請使用下方選單購買商品`
-          )
-          .setImage(
-    'https://cdn.discordapp.com/attachments/1501098193276895360/1503008880513253406/ChatGPT_Image_2026510_08_19_56.png'
-          )
-          .setFooter({
-            text: 'Rain Shop System'
-          })
-          .setTimestamp()
-      ],
-      components: [shopRow]
-    });
+  const options =
+    shopData.map(item => ({
+      label: item.item_name,
+      description:
+        `${item.price} 星雨幣`,
+      value: item.item_name
+    }));
 
-});
+  const selectMenu =
+    new StringSelectMenuBuilder()
+      .setCustomId('shop_select')
+      .setPlaceholder('選擇要購買的商品')
+      .addOptions(options);
+
+  const shopRow =
+    new ActionRowBuilder()
+      .addComponents(selectMenu);
+
+  await shopChannel.send({
+    embeds: [
+      new EmbedBuilder()
+        .setColor('#5865F2')
+        .setTitle('🛒 星雨商店')
+        .setDescription(
+`✨ 歡迎來到星雨商店
+
+請使用下方選單購買商品`
+        )
+    ],
+    components: [shopRow]
+  });
+
+}
 
 client.on(Events.InteractionCreate, async interaction => {
 
@@ -741,15 +768,35 @@ if (interaction.commandName === '商店') {
 
   let text = '🛒 星雨商店\n\n';
 
-    const shopData =
-      await getShop();
+const shopData =
+  await getShop();
 
-    shopData.forEach(item => {
+// 商店沒商品
+if (!shopData || shopData.length === 0) {
 
-      text +=
-    `✨ ${item.item_name} - ${item.price} 星雨幣\n`;
+  console.log('商店目前沒有商品');
 
-    });
+  await shopChannel.send({
+    embeds: [
+      new EmbedBuilder()
+        .setColor('#ED4245')
+        .setTitle('🛒 星雨商店')
+        .setDescription(
+          '目前沒有商品\n請先使用 /新增商品'
+        )
+    ]
+  });
+
+  return;
+}
+
+const options =
+  shopData.map(item => ({
+    label: item.item_name,
+    description:
+      `${item.price} 星雨幣`,
+    value: item.item_name
+  }));
 
   await interaction.reply({
     content: text,
@@ -950,6 +997,63 @@ if (interaction.commandName === '交易紀錄') {
 
 }
 
+// /兌換
+if (interaction.commandName === '兌換') {
+
+  const code =
+    interaction.options.getString('序號');
+
+  const { data: redeemData } =
+    await supabase
+      .from('redeem_codes')
+      .select('*')
+      .eq('code', code)
+      .single();
+
+  if (!redeemData) {
+
+    return interaction.reply({
+      content: '❌ 序號不存在',
+      flags: 64
+    });
+
+  }
+
+  if (redeemData.used) {
+
+    return interaction.reply({
+      content: '❌ 序號已被使用',
+      flags: 64
+    });
+
+  }
+
+  const newCoins =
+    userData.coins + redeemData.value;
+
+  await updateCoins(
+    userId,
+    newCoins
+  );
+
+  await supabase
+    .from('redeem_codes')
+    .update({
+      used: true,
+      used_by: userId
+    })
+    .eq('code', code);
+
+  await interaction.reply({
+    content:
+`🎁 兌換成功！
+
+獲得 ${redeemData.value} 星雨幣`,
+    flags: 64
+  });
+
+}
+
 // /排行榜
 if (interaction.commandName === '排行榜') {
   const { data, error } =
@@ -991,98 +1095,6 @@ if (interaction.commandName === '排行榜') {
   });
 
 }
-
-});
-
-// 商店下拉選單
-client.on(
-  Events.InteractionCreate,
-  async interaction => {
-
-    if (!interaction.isStringSelectMenu()) return;
-
-    if (
-      interaction.customId === 'shop_select'
-    ) {
-
-      const itemName =
-        interaction.values[0];
-
-      const userId =
-        interaction.user.id;
-
-      const userData =
-        await getUser(userId);
-
-      // 讀取商品
-      const { data: shopItem } =
-        await supabase
-          .from('shop')
-          .select('*')
-          .eq('item_name', itemName)
-          .single();
-
-      if (!shopItem) {
-
-        return interaction.reply({
-          content: '❌ 商品不存在',
-          flags: 64
-        });
-
-      }
-
-      // 錢不夠
-      if (
-        userData.coins < shopItem.price
-      ) {
-
-        return interaction.reply({
-          content: '❌ 星雨幣不足',
-          flags: 64
-        });
-
-      }
-
-      // 扣款
-      await updateCoins(
-        userId,
-        userData.coins - shopItem.price
-      );
-
-      // 隨機序號
-      const code =
-        Math.random()
-          .toString(36)
-          .substring(2, 10)
-          .toUpperCase();
-
-      // 私訊玩家
-      await interaction.user.send({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('#57F287')
-            .setTitle('🎁 購買成功')
-            .setDescription(
-`你購買了：
-
-📦 ${itemName}
-
-🔑 序號：
-\`${code}\``
-            )
-        ]
-      });
-
-      // 回覆
-      await interaction.reply({
-        content:
-`✅ 已購買 ${itemName}
-
-序號已私訊給你`,
-        flags: 64
-      });
-
-    }
 
 });
 
@@ -1350,7 +1362,9 @@ client.on(
 
     // 生成序號
     const code =
-      await createRedeemCode(100);
+      await createRedeemCode(
+        shopItem.price
+     );
 
     // 回覆
     await interaction.reply({
@@ -1369,6 +1383,8 @@ ${code}
       ],
       flags: 64
     });
+  
+  }
 
 });
 

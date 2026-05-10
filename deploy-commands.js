@@ -8,6 +8,19 @@ const commands = [
   {
     name: '交易紀錄',
     description: '查看最近交易紀錄'
+  },
+
+  {
+    name: '兌換',
+    description: '兌換商品序號',
+    options: [
+      {
+        name: '序號',
+        description: '輸入序號',
+        type: 3,
+        required: true
+      }
+    ]
   }
 
 ];
