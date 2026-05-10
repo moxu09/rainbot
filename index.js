@@ -168,7 +168,8 @@ client.once(Events.ClientReady, async () => {
   console.log(process.env.CHANNEL_ID);
   console.log(process.env.CHECKIN_CHANNEL_ID);
   console.log(process.env.TRANSFER_CHANNEL_ID);
-  
+  console.log(process.env.SHOP_CHANNEL_ID);
+
   if (!process.env.CHANNEL_ID) {
     console.log('CHANNEL_ID 未設定');
   }
@@ -181,6 +182,10 @@ client.once(Events.ClientReady, async () => {
     console.log('TRANSFER_CHANNEL_ID 未設定');
   }
 
+  if (!process.env.SHOP_CHANNEL_ID) {
+    console.log('SHOP_CHANNEL_ID 未設定');
+  }
+
     const walletChannel =
       await client.channels.fetch(
         process.env.CHANNEL_ID
@@ -189,6 +194,11 @@ client.once(Events.ClientReady, async () => {
     const checkinChannel =
       await client.channels.fetch(
         process.env.CHECKIN_CHANNEL_ID
+      );
+
+    const shopChannel =
+      await client.channels.fetch(
+        process.env.SHOP_CHANNEL_ID
       );
 
     // 刪除舊 ATM
@@ -203,6 +213,12 @@ client.once(Events.ClientReady, async () => {
       '☔ 每日簽到' 
     );
 
+   // 刪除舊商店
+   await clearOldMessages(
+     shopChannel,
+     '🛒 星雨商店'
+   );
+
     // 等待同步
     await new Promise(resolve =>
       setTimeout(resolve, 2000)
@@ -213,7 +229,8 @@ client.once(Events.ClientReady, async () => {
   
   if (
     !walletChannel ||
-    !checkinChannel
+    !checkinChannel ||
+    !shopChannel
   ) {
     console.log('找不到頻道');
     return;
@@ -312,6 +329,48 @@ client.once(Events.ClientReady, async () => {
     ],
     components: [checkinRow]
   });
+
+    const shopData =
+      await getShop();
+
+    const options =
+      shopData.map(item => ({
+        label: item.item_name,
+        description:
+          `${item.price} 星雨幣`,
+        value: item.item_name
+      }));
+
+    const selectMenu =
+      new StringSelectMenuBuilder()
+        .setCustomId('shop_select')
+        .setPlaceholder('選擇要購買的商品')
+        .addOptions(options);
+
+    const shopRow =
+      new ActionRowBuilder()
+        .addComponents(selectMenu);
+
+    await shopChannel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#5865F2')
+          .setTitle('🛒 星雨商店')
+          .setDescription(
+    `✨ 歡迎來到星雨商店
+
+    請使用下方選單購買商品`
+          )
+          .setImage(
+    'https://cdn.discordapp.com/attachments/1501098193276895360/1503008880513253406/ChatGPT_Image_2026510_08_19_56.png'
+          )
+          .setFooter({
+            text: 'Rain Shop System'
+          })
+          .setTimestamp()
+      ],
+      components: [shopRow]
+    });
 
 });
 
@@ -935,6 +994,97 @@ if (interaction.commandName === '排行榜') {
 
 });
 
+// 商店下拉選單
+client.on(
+  Events.InteractionCreate,
+  async interaction => {
+
+    if (!interaction.isStringSelectMenu()) return;
+
+    if (
+      interaction.customId === 'shop_select'
+    ) {
+
+      const itemName =
+        interaction.values[0];
+
+      const userId =
+        interaction.user.id;
+
+      const userData =
+        await getUser(userId);
+
+      // 讀取商品
+      const { data: shopItem } =
+        await supabase
+          .from('shop')
+          .select('*')
+          .eq('item_name', itemName)
+          .single();
+
+      if (!shopItem) {
+
+        return interaction.reply({
+          content: '❌ 商品不存在',
+          flags: 64
+        });
+
+      }
+
+      // 錢不夠
+      if (
+        userData.coins < shopItem.price
+      ) {
+
+        return interaction.reply({
+          content: '❌ 星雨幣不足',
+          flags: 64
+        });
+
+      }
+
+      // 扣款
+      await updateCoins(
+        userId,
+        userData.coins - shopItem.price
+      );
+
+      // 隨機序號
+      const code =
+        Math.random()
+          .toString(36)
+          .substring(2, 10)
+          .toUpperCase();
+
+      // 私訊玩家
+      await interaction.user.send({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('#57F287')
+            .setTitle('🎁 購買成功')
+            .setDescription(
+`你購買了：
+
+📦 ${itemName}
+
+🔑 序號：
+\`${code}\``
+            )
+        ]
+      });
+
+      // 回覆
+      await interaction.reply({
+        content:
+`✅ 已購買 ${itemName}
+
+序號已私訊給你`,
+        flags: 64
+      });
+
+    }
+
+});
 
 // Modal 轉帳
 client.on(
@@ -1137,6 +1287,88 @@ client.on(
       await interaction.showModal(modal);
 
     }
+
+});
+
+// 商店下拉選單
+client.on(
+  Events.InteractionCreate,
+  async interaction => {
+
+    if (!interaction.isStringSelectMenu())
+      return;
+
+    if (
+      interaction.customId !==
+      'shop_select'
+    ) return;
+
+    const item =
+      interaction.values[0];
+
+    const userId =
+      interaction.user.id;
+
+    const userData =
+      await getUser(userId);
+
+    const { data: shopItem } =
+      await supabase
+        .from('shop')
+        .select('*')
+        .eq('item_name', item)
+        .single();
+
+    if (!shopItem) {
+
+      return interaction.reply({
+        content: '❌ 商品不存在',
+        flags: 64
+      });
+
+    }
+
+    if (
+      userData.coins < shopItem.price
+    ) {
+
+      return interaction.reply({
+        content: '❌ 星雨幣不足',
+        flags: 64
+      });
+
+    }
+
+    // 扣款
+    const newCoins =
+      userData.coins - shopItem.price;
+
+    await updateCoins(
+      userId,
+      newCoins
+    );
+
+    // 生成序號
+    const code =
+      await createRedeemCode(100);
+
+    // 回覆
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#57F287')
+          .setTitle('🛒 購買成功')
+          .setDescription(
+`商品：${item}
+
+🎁 序號：
+${code}
+
+已扣除 ${shopItem.price} 星雨幣`
+          )
+      ],
+      flags: 64
+    });
 
 });
 
